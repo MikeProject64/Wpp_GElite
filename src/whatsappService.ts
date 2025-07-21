@@ -250,4 +250,25 @@ export function initWhatsApp(socketIO: SocketIO, io: Server, userId: string) {
         logger.info({ userId, socketId: socketIO.id }, 'Cliente desconectado do Socket.IO.');
         userSocketMap.delete(userId);
     });
+}
+
+export function removeSession(sessionId: string) {
+    const sessionLogger = logger.child({ sessionId });
+    const sock = sessions.get(sessionId);
+    if (sock) {
+        try {
+            sock.logout();
+            sessionLogger.info('Sessão desconectada via removeSession.');
+        } catch (error) {
+            sessionLogger.error({ error }, 'Erro ao fazer logout em removeSession.');
+        } finally {
+            sessions.delete(sessionId);
+        }
+    }
+
+    const sessionPath = path.join(SESSIONS_DIR, sessionId);
+    if (fs.existsSync(sessionPath)) {
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+        sessionLogger.info('Pasta da sessão removida do disco via removeSession.');
+    }
 } 

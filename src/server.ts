@@ -16,11 +16,23 @@ const logger = pino({
     level: 'info'
 });
 
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'https://gestorelite.app', // URL de produção
+  'http://localhost:3000', // URL de desenvolvimento comum
+  'http://localhost:9002'  // URL de desenvolvimento reportada no erro
+];
+
 const app = express();
 const port = process.env.PORT || 8000;
 
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
@@ -29,7 +41,13 @@ app.use(express.json());
 const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, {
     cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -74,7 +92,7 @@ io.on('connection', (socket) => {
         currentSessionId = sessionId;
         
         // Inicia e configura a sessão do WhatsApp
-        initWhatsApp(socket, io, sessionId, userId);
+        initWhatsApp(socket, io, userId);
     });
 
     socket.on('disconnect', () => {

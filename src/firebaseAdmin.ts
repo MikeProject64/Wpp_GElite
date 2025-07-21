@@ -39,4 +39,4 @@ export async function verifyFirebaseToken(token: string): Promise<string | null>
     }
 }
 
-export { db }; // Exporta a referência do Firestore 
+export { db, admin }; 
